@@ -85,9 +85,9 @@ void reconnect() {
 
       // ... and resubscribe
 
-      client.subscribe("esp32-02/button1");
-      client.subscribe("esp32-02/button2");
-      client.subscribe("esp32-03/button3");
+      client.subscribe("esp32-02/button3");
+      client.subscribe("esp32-02/button4");
+      client.subscribe("esp32-03/button5");
       
       
       //Once connected, publish an announcement...

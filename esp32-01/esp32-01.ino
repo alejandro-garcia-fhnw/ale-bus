@@ -7,11 +7,15 @@
 EasyButton button1(BUTTON1_PIN);
 #define BUTTON2_PIN 4
 EasyButton button2(BUTTON2_PIN);
+#define BUTTON3_PIN 18
+EasyButton button3(BUTTON3_PIN);
+#define BUTTON4_PIN 19
+EasyButton button4(BUTTON4_PIN);
 /*
  * ESP32-01 - Hinten
  * 
  * 5 Relays - MQTT Topic "esp32-01/relay1,2,3,4,5"
- * 2 Buttons - MQTT Topic "esp32-01/button1,2"
+ * 4 Buttons - MQTT Topic "esp32-01/button1,2"
  * 1 DHT22 - MQTT Topic "esp32-01/temp", "esp32-01/hum"
  * 
  * IP: xxx.xxx.x.xxx
@@ -38,6 +42,8 @@ const int RELAY_5 = 27;
 
 int button1_status;
 int button2_status;
+int button3_status;
+int button4_status;
 
 const int dht22 = 2;
 DHT dht(dht22,DHT22);
@@ -79,7 +85,8 @@ void reconnect() {
 
       client.subscribe("esp32-01/button1");
       client.subscribe("esp32-01/button2");
-      
+      client.subscribe("esp32-01/button3");
+      client.subscribe("esp32-01/button4");
       
       //Once connected, publish an announcement...
       client.publish("esp32-01/status", "connected");
@@ -180,13 +187,25 @@ void callback(char* topic, byte *payload, unsigned int length) {
         button2_status = 0;
       }
     }
+
+    if(topicS == "esp32-01/button3") {   
+      if ((char)payload[0] == '1') {
+        button3_status = 1;
+      }
+      else {
+        button3_status = 0;
+      }
+    }
+
+    if(topicS == "esp32-01/button4") {   
+      if ((char)payload[0] == '1') {
+        button4_status = 1;
+      }
+      else {
+        button4_status = 0;
+      }
+    }
     
-    
-    //Serial.print("topic:");
-    //Serial.println(topic);
-    //Serial.print("data:");  
-    //Serial.write(payload, length);
-    //Serial.println();
 }
 
 // Callback function to be called when the button is pressed.
@@ -210,6 +229,26 @@ void on2Pressed() {
   Serial.println("Button 2 pressed" + button2_status);
   delay(500);
 }
+void on3Pressed() {
+  if(button3_status == 0) {
+    client.publish("esp32-01/button3", "1");
+  }
+  if(button3_status == 1) {
+    client.publish("esp32-03/button3", "0");
+  }
+  Serial.println("Button 3 pressed" + button3_status);
+  delay(500);
+}
+void on4Pressed() {
+  if(button4_status == 0) {
+    client.publish("esp32-04/button4", "1");
+  }
+  if(button4_status == 1) {
+    client.publish("esp32-04/button4", "0");
+  }
+  Serial.println("Button 4 pressed" + button4_status);
+  delay(500);
+}
 
 
 void setup() {
@@ -220,10 +259,14 @@ void setup() {
   // Initialize buttons.
   button1.begin();
   button2.begin();
+  button3.begin();
+  button4.begin();
   
   // Add the callback function to be called when the button is pressed.
   button1.onPressed(on1Pressed);
   button2.onPressed(on2Pressed);
+  button3.onPressed(on3Pressed);
+  button4.onPressed(on4Pressed);
 
   pinMode(RELAY_1,OUTPUT);
   pinMode(RELAY_2,OUTPUT);
@@ -244,6 +287,8 @@ void loop() {
    
     button1.read();
     button2.read();
+    button3.read();
+    button4.read();
 
     long now = millis();
     // If last time is longer than xx Seconds

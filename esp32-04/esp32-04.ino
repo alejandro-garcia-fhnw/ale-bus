@@ -143,13 +143,13 @@ void loop() {
       dtostrf(tempDHT22, 1, 2, temp1String);
       Serial.print("Temperature: ");
       Serial.println(temp1String);
-      client.publish("esp-04/temp", temp1String);
+      client.publish("esp32-04/temp", temp1String);
 
       // Convert Humidity value to a char array and publish it
       char temp2String[8];
       dtostrf(humDHT22, 1, 2, temp2String);
       Serial.print("Humidity: ");
       Serial.println(temp2String);
-      client.publish("esp-04/hum", temp2String);
+      client.publish("esp32-04/hum", temp2String);
     } 
  }

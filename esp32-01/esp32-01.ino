@@ -10,8 +10,8 @@ EasyButton button2(BUTTON2_PIN);
 /*
  * ESP32-01 - Hinten
  * 
- * 5 Relays - MQTT Topic "esp32-01/light/bedL"
- * 2 Buttons - MQTT Topic "esp32-01/buttons/bedR"
+ * 5 Relays - MQTT Topic "esp32-01/relay1,2,3,4,5"
+ * 2 Buttons - MQTT Topic "esp32-01/button1,2"
  * 1 DHT22 - MQTT Topic "esp32-01/temp", "esp32-01/hum"
  * 
  * IP: xxx.xxx.x.xxx
@@ -65,8 +65,7 @@ void reconnect() {
   while (!client.connected()) {
     Serial.print("Attempting MQTT connection...");
     // Create a random client ID
-    String clientId = "ESP32Client-";
-    clientId += String(random(0xffff), HEX);
+    String clientId = "esp32-01";
     // Attempt to connect
     if (client.connect(clientId.c_str())) {
       Serial.println("connected");

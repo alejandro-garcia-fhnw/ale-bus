@@ -2,17 +2,30 @@
 #include <PubSubClient.h>
 #include <EasyButton.h>
 #include "DHT.h"
+#include <OneWire.h>
+#include <DallasTemperature.h>
 
-#define BUTTON1_PIN 5
-EasyButton button1(BUTTON1_PIN);
-#define BUTTON2_PIN 4
-EasyButton button2(BUTTON2_PIN);
+#define BUTTON3_PIN 25
+EasyButton button3(BUTTON3_PIN);
+#define BUTTON4_PIN 26
+EasyButton button4(BUTTON4_PIN);
+#define BUTTON5_PIN 27
+EasyButton button5(BUTTON5_PIN);
 /*
  * ESP32-02 - Küche
  * 
- * 5 Relays - MQTT Topic "esp32-01/light/bedL"
- * 2 Buttons - MQTT Topic "esp32-01/buttons/bedR"
- * 1 DHT22 - MQTT Topic "esp32-01/temp", "esp32-01/hum"
+ * 3 Buttons
+ *    MQTT Topic: "esp32-02/button3,4,5"
+ *    GPIO PINS:  25, 26, 27
+ * 
+ * 1 DHT22
+ *    MQTT Topic: "esp32-02/temp", "esp32-02/hum"
+ *    GPIO PIN:   2
+ * 
+ * 1 DS18B20
+ *    MQTT Topic: "esp32-02/temp-outside"
+ *    GPIO PIN:   4
+ * 
  * 
  * IP: xxx.xxx.x.xxx
  * 
@@ -30,17 +43,17 @@ char msg[50];
 int value = 0;
 
 // GPIOs
-const int RELAY_1 = 32;
-const int RELAY_2 = 33;
-const int RELAY_3 = 25;
-const int RELAY_4 = 26;
-const int RELAY_5 = 27;
 
-int button1_status;
-int button2_status;
+int button3_status;
+int button4_status;
+int button5_status;
 
 const int dht22 = 2;
 DHT dht(dht22,DHT22);
+
+const int ds18b20 = 4;
+OneWire oneWire(ds18b20);
+DallasTemperature sensorOne(&oneWire);
 
 void setup_wifi() {   
     delay(10);
@@ -65,25 +78,20 @@ void reconnect() {
   while (!client.connected()) {
     Serial.print("Attempting MQTT connection...");
     // Create a random client ID
-    String clientId = "ESP32Client-";
-    clientId += String(random(0xffff), HEX);
+    String clientId = "esp32-02";
     // Attempt to connect
     if (client.connect(clientId.c_str())) {
       Serial.println("connected");
 
       // ... and resubscribe
-      client.subscribe("esp32-01/relay1");
-      client.subscribe("esp32-01/relay2");
-      client.subscribe("esp32-01/relay3");
-      client.subscribe("esp32-01/relay4");
-      client.subscribe("esp32-01/relay5");
 
-      client.subscribe("esp32-01/button1");
-      client.subscribe("esp32-01/button2");
+      client.subscribe("esp32-02/button1");
+      client.subscribe("esp32-02/button2");
+      client.subscribe("esp32-03/button3");
       
       
       //Once connected, publish an announcement...
-      client.publish("esp32-01/status", "connected");
+      client.publish("esp32-02/status", "connected");
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
@@ -97,118 +105,66 @@ void reconnect() {
 void callback(char* topic, byte *payload, unsigned int length) {
     String topicS(topic);
     
-    if(topicS == "esp32-01/relay1") {
-      Serial.println("-------Relay 1-----");
-      
-      if ((char)payload[0] == '1') {
-        digitalWrite(RELAY_1, HIGH);
-        Serial.println("on");
-      }
-      else {
-        digitalWrite(RELAY_1, LOW);
-        Serial.println("off");
-      }
-    }
-    
-    if(topicS == "esp32-01/relay2") {
-      Serial.println("-------Relay 2-----");
-      
-      if ((char)payload[0] == '1') {
-        digitalWrite(RELAY_2, HIGH);
-        Serial.println("on");
-      }
-      else {
-        digitalWrite(RELAY_2, LOW);
-        Serial.println("off");
-      }
-    }
-    
-    if(topicS == "esp32-01/relay3") {
-      Serial.println("-------Relay 3-----");
-      
-      if ((char)payload[0] == '1') {
-        digitalWrite(RELAY_3, HIGH);
-        Serial.println("on");
-      }
-      else {
-        digitalWrite(RELAY_3, LOW);
-        Serial.println("off");
-      }
-    }
-    
-    if(topicS == "esp32-01/relay4") {
-      Serial.println("-------Relay 4-----");
-      
-      if ((char)payload[0] == '1') {
-        digitalWrite(RELAY_4, HIGH);
-        Serial.println("on");
-      }
-      else {
-        digitalWrite(RELAY_4, LOW);
-        Serial.println("off");
-      }
-    }
-    
-    if(topicS == "esp32-01/relay5") {
-      Serial.println("-------Relay 5-----");
-      
-      if ((char)payload[0] == '1') {
-        digitalWrite(RELAY_5, HIGH);
-        Serial.println("on");
-      }
-      else {
-        digitalWrite(RELAY_5, LOW);
-        Serial.println("off");
-      }
-    }
-    
     //Buttons
     
-    if(topicS == "esp32-01/button1") {
+    if(topicS == "esp32-02/button3") {
       if ((char)payload[0] == '1') {
-        button1_status = 1;
+        button3_status = 1;
       }
       else {
-        button1_status = 0;
+        button3_status = 0;
       }
     }
     
-    if(topicS == "esp32-01/button2") {   
+    if(topicS == "esp32-02/button4") {   
       if ((char)payload[0] == '1') {
-        button2_status = 1;
+        button4_status = 1;
       }
       else {
-        button2_status = 0;
+        button4_status = 0;
       }
     }
-    
-    
-    //Serial.print("topic:");
-    //Serial.println(topic);
-    //Serial.print("data:");  
-    //Serial.write(payload, length);
-    //Serial.println();
+
+    if(topicS == "esp32-02/button5") {   
+      if ((char)payload[0] == '1') {
+        button5_status = 1;
+      }
+      else {
+        button5_status = 0;
+      }
+    }
+
 }
 
 // Callback function to be called when the button is pressed.
-void on1Pressed() {
-  if(button1_status == 0) {
-    client.publish("esp32-01/button1", "1");
+void on3Pressed() {
+  if(button3_status == 0) {
+    client.publish("esp32-02/button3", "1");
   }
-  if(button1_status == 1) {
-    client.publish("esp32-01/button1", "0");
+  if(button3_status == 1) {
+    client.publish("esp32-02/button3", "0");
   }
-  Serial.println("Button 1 pressed" + button1_status);
+  Serial.println("Button 3 pressed" + button3_status);
   delay(500);
 }
-void on2Pressed() {
-  if(button2_status == 0) {
-    client.publish("esp32-01/button2", "1");
+void on4Pressed() {
+  if(button4_status == 0) {
+    client.publish("esp32-02/button4", "1");
   }
-  if(button2_status == 1) {
-    client.publish("esp32-01/button2", "0");
+  if(button4_status == 1) {
+    client.publish("esp32-02/button4", "0");
   }
-  Serial.println("Button 2 pressed" + button2_status);
+  Serial.println("Button 4 pressed" + button4_status);
+  delay(500);
+}
+void on5Pressed() {
+  if(button5_status == 0) {
+    client.publish("esp32-02/button5", "1");
+  }
+  if(button5_status == 1) {
+    client.publish("esp32-02/button5", "0");
+  }
+  Serial.println("Button 5 pressed" + button5_status);
   delay(500);
 }
 
@@ -217,20 +173,19 @@ void setup() {
   Serial.begin(115200);
 
   dht.begin();
+
+  sensorOne.begin();
   
   // Initialize buttons.
-  button1.begin();
-  button2.begin();
+  button3.begin();
+  button4.begin();
+  button5.begin();
   
   // Add the callback function to be called when the button is pressed.
-  button1.onPressed(on1Pressed);
-  button2.onPressed(on2Pressed);
+  button3.onPressed(on3Pressed);
+  button4.onPressed(on4Pressed);
+  button5.onPressed(on5Pressed);
 
-  pinMode(RELAY_1,OUTPUT);
-  pinMode(RELAY_2,OUTPUT);
-  pinMode(RELAY_3,OUTPUT);
-  pinMode(RELAY_4,OUTPUT);
-  pinMode(RELAY_5,OUTPUT);
     
   Serial.setTimeout(500);// Set time out for 
   setup_wifi();
@@ -243,8 +198,9 @@ void setup() {
 void loop() {
    client.loop();
    
-    button1.read();
-    button2.read();
+    button3.read();
+    button4.read();
+    button5.read();
 
     long now = millis();
     // If last time is longer than xx Seconds
@@ -254,19 +210,29 @@ void loop() {
       //Read Temp + Hum
       float tempDHT22 = dht.readTemperature();
       float humDHT22 = dht.readHumidity();
+
+      sensorOne.requestTemperatures();
+      float tempOutisde = sensorOne.getTempCByIndex(0);
       
       // Convert the Temperature to a char array and publish it
       char temp1String[8];
       dtostrf(tempDHT22, 1, 2, temp1String);
       Serial.print("Temperature: ");
       Serial.println(temp1String);
-      client.publish("esp-01/temp", temp1String);
+      client.publish("esp-02/temp", temp1String);
 
       // Convert Humidity value to a char array and publish it
       char temp2String[8];
       dtostrf(humDHT22, 1, 2, temp2String);
       Serial.print("Humidity: ");
       Serial.println(temp2String);
-      client.publish("esp-01/hum", temp2String);
+      client.publish("esp-02/hum", temp2String);
+
+      // Convert the Temperature to a char array and publish it
+      char temp3String[8];
+      dtostrf(tempOutisde, 1, 2, temp3String);
+      Serial.print("Temperature Outside: ");
+      Serial.println(temp3String);
+      client.publish("esp-02/temp-outside", temp3String);
     } 
  }

@@ -80,7 +80,7 @@ void reconnect() {
     // Create a random client ID
     String clientId = "esp32-02";
     // Attempt to connect
-    if (client.connect(clientId.c_str())) {
+    if (client.connect(clientId.c_str(),"esp32-02/status",0,1,"offline")) {
       Serial.println("connected");
 
       // ... and resubscribe
@@ -91,7 +91,7 @@ void reconnect() {
       
       
       //Once connected, publish an announcement...
-      client.publish("esp32-02/status", "connected");
+      client.publish("esp32-02/status", "online", true);
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
@@ -198,6 +198,7 @@ void setup() {
 void loop() {
    client.loop();
    
+
     button3.read();
     button4.read();
     button5.read();

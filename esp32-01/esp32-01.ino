@@ -14,9 +14,16 @@ EasyButton button4(BUTTON4_PIN);
 /*
  * ESP32-01 - Hinten
  * 
- * 5 Relays - MQTT Topic "esp32-01/relay1,2,3,4,5"
- * 4 Buttons - MQTT Topic "esp32-01/button1,2"
- * 1 DHT22 - MQTT Topic "esp32-01/temp", "esp32-01/hum"
+ * 6 Relays
+ *    MQTT Topic: "esp32-01/relay1,2,3,4,5"
+ *    GPIO PINS: 32,33,25,26,27,14
+ * 
+ * 4 Buttons
+ *    MQTT Topic: "esp32-01/button1,2"
+ *    GPIO Pins: 5,4,18,19
+ * 
+ * 1 DHT22
+ *    MQTT Topic: "esp32-01/temp", "esp32-01/hum"
  * 
  * IP: xxx.xxx.x.xxx
  * 
@@ -39,6 +46,7 @@ const int RELAY_2 = 33;
 const int RELAY_3 = 25;
 const int RELAY_4 = 26;
 const int RELAY_5 = 27;
+const int RELAY_6 = 14;
 
 int button1_status;
 int button2_status;
@@ -70,10 +78,11 @@ void reconnect() {
   // Loop until we're reconnected
   while (!client.connected()) {
     Serial.print("Attempting MQTT connection...");
-    // Create a random client ID
+    // Create a client ID
     String clientId = "esp32-01";
+    clientId += String(random(0xffff), HEX);
     // Attempt to connect
-    if (client.connect(clientId.c_str())) {
+    if (client.connect(clientId.c_str(),"esp32-01/status",0,1,"offline")) {
       Serial.println("connected");
 
       // ... and resubscribe
@@ -82,20 +91,20 @@ void reconnect() {
       client.subscribe("esp32-01/relay3");
       client.subscribe("esp32-01/relay4");
       client.subscribe("esp32-01/relay5");
+      client.subscribe("esp32-01/relay6");
 
       client.subscribe("esp32-01/button1");
       client.subscribe("esp32-01/button2");
       client.subscribe("esp32-01/button3");
       client.subscribe("esp32-01/button4");
-      
+      delay(1000);
       //Once connected, publish an announcement...
-      client.publish("esp32-01/status", "connected");
+      client.publish("esp32-01/status", "online", true);
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
       Serial.println(" try again in 5 seconds");
       // Wait 5 seconds before retrying
-      delay(5000);
     }
   }
 }
@@ -103,15 +112,18 @@ void reconnect() {
 void callback(char* topic, byte *payload, unsigned int length) {
     String topicS(topic);
     
+    //alive message
+    //client.publish("esp32-01/status", "connected");
+    
     if(topicS == "esp32-01/relay1") {
       Serial.println("-------Relay 1-----");
       
       if ((char)payload[0] == '1') {
-        digitalWrite(RELAY_1, HIGH);
+        digitalWrite(RELAY_1, LOW);
         Serial.println("on");
       }
       else {
-        digitalWrite(RELAY_1, LOW);
+        digitalWrite(RELAY_1, HIGH);
         Serial.println("off");
       }
     }
@@ -120,11 +132,11 @@ void callback(char* topic, byte *payload, unsigned int length) {
       Serial.println("-------Relay 2-----");
       
       if ((char)payload[0] == '1') {
-        digitalWrite(RELAY_2, HIGH);
+        digitalWrite(RELAY_2, LOW);
         Serial.println("on");
       }
       else {
-        digitalWrite(RELAY_2, LOW);
+        digitalWrite(RELAY_2, HIGH);
         Serial.println("off");
       }
     }
@@ -133,11 +145,11 @@ void callback(char* topic, byte *payload, unsigned int length) {
       Serial.println("-------Relay 3-----");
       
       if ((char)payload[0] == '1') {
-        digitalWrite(RELAY_3, HIGH);
+        digitalWrite(RELAY_3, LOW);
         Serial.println("on");
       }
       else {
-        digitalWrite(RELAY_3, LOW);
+        digitalWrite(RELAY_3, HIGH);
         Serial.println("off");
       }
     }
@@ -146,11 +158,11 @@ void callback(char* topic, byte *payload, unsigned int length) {
       Serial.println("-------Relay 4-----");
       
       if ((char)payload[0] == '1') {
-        digitalWrite(RELAY_4, HIGH);
+        digitalWrite(RELAY_4, LOW);
         Serial.println("on");
       }
       else {
-        digitalWrite(RELAY_4, LOW);
+        digitalWrite(RELAY_4, HIGH);
         Serial.println("off");
       }
     }
@@ -159,11 +171,24 @@ void callback(char* topic, byte *payload, unsigned int length) {
       Serial.println("-------Relay 5-----");
       
       if ((char)payload[0] == '1') {
-        digitalWrite(RELAY_5, HIGH);
+        digitalWrite(RELAY_5, LOW);
         Serial.println("on");
       }
       else {
-        digitalWrite(RELAY_5, LOW);
+        digitalWrite(RELAY_5, HIGH);
+        Serial.println("off");
+      }
+    }
+
+    if(topicS == "esp32-01/relay6") {
+      Serial.println("-------Relay 6-----");
+      
+      if ((char)payload[0] == '1') {
+        digitalWrite(RELAY_6, LOW);
+        Serial.println("on");
+      }
+      else {
+        digitalWrite(RELAY_6, HIGH);
         Serial.println("off");
       }
     }
@@ -273,6 +298,7 @@ void setup() {
   pinMode(RELAY_3,OUTPUT);
   pinMode(RELAY_4,OUTPUT);
   pinMode(RELAY_5,OUTPUT);
+  pinMode(RELAY_6,OUTPUT);
     
   Serial.setTimeout(500);// Set time out for 
   setup_wifi();
